@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<script type="text/javascript" src="/static/js/jquery.min.js"></script>
+
+
+<div style="text-align:center">
+
+    <button id='reg' onclick=faceReg()>Recognition</button>
+    <button id='entry' onclick=faceEntry()>registration</button>
+
+    <div id='info' style="display: none">
+        name:<input type="text" id="name" autocomplete="off">
+        <button id="butPh" onclick=takePhotos()>TakePhotos</button>
+
+        <div id="photos"></div>
+        <button id="sub" style="display: none" onclick=subRes()>Submit</button>
+    </div>
+
+    <div id="tips"></div>
+</div>
+<script>
+
+
+    function clear() {
+        $("#tips").empty();
+        $("#photos").empty();
+        $("#name").val('');
+
+    }
+
+    function faceReg() {
+        clear();
+        $("#info").hide();
+        $.post('/reg/', {}, function (res, status) {
+            if (res.status == 'success') {
+                clear();
+                $("#tips").append(res.msg)
+
+            }
+        })
+    }
+
+
+    function faceEntry() {
+        clear();
+        $("#sub").hide();
+        $("#info").show();
+    }
+
+
+    function takePhotos() {
+        $("#photos").empty();
+        $.post('/takePhotos/', {}, function (res, status) {
+            if (res.status == 'success') {
+
+                $("#photos").append(
+                    "<img src=\"data:image/gif;base64," + res.image + "\" width=\"480px\" height=\"360px\">"
+                );
+
+
+                $("#sub").show()
+            }
+        });
+    }
+
+    function subRes() {
+        var name = $('#name').val();
+        if (name == '') {
+            $("#tips").empty();
+            $("#tips").append('Name must be clarified')
+        } else {
+
+
+            $.post('/subInfo/', JSON.stringify({'name': name}), function (res, status) {
+                if (res.status == 'success') {
+
+                    $("#info").hide();
+                    clear();
+                    $("#tips").append('success')
+                }
+
+            });
+        }
+
+
+    }
+
+</script>
+</body>
+</html>
