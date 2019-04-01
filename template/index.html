@@ -1,95 +1,106 @@
-<!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <title>face</title>
+    <meta charset="utf-8">
 </head>
 <body>
 <script type="text/javascript" src="/static/js/jquery.min.js"></script>
 
-
-<div style="text-align:center">
-
-    <button id='reg' onclick=faceReg()>Recognition</button>
-    <button id='entry' onclick=faceEntry()>registration</button>
-
-    <div id='info' style="display: none">
+<video id="video" width="500px" height="500px" autoplay="autoplay"></video>
+<canvas id="canvas" width="500px" height="500px"></canvas>
+<div>
+    <button id="reg" onclick=reg()>Run</button>
+    <button id="entry" onclick=entry()>Register</button>
+    <div id='entryInfo' style="display: none">
         name:<input type="text" id="name" autocomplete="off">
-        <button id="butPh" onclick=takePhotos()>TakePhotos</button>
-
-        <div id="photos"></div>
-        <button id="sub" style="display: none" onclick=subRes()>Submit</button>
+        <button id="snap" onclick=takePhoto()>Retake</button>
+        <button id="sub" onclick=sub()>Submit</button>
     </div>
-
-    <div id="tips"></div>
+    <div id="tips" style="color:#F00"></div>
 </div>
+
 <script>
+    var videoEle = $('#video')[0];
+    var canvasEle = $('#canvas')[0];
 
 
-    function clear() {
-        $("#tips").empty();
-        $("#photos").empty();
-        $("#name").val('');
-
-    }
-
-    function faceReg() {
-        clear();
-        $("#info").hide();
-        $.post('/reg/', {}, function (res, status) {
-            if (res.status == 'success') {
-                clear();
-                $("#tips").append(res.msg)
-
-            }
-        })
-    }
-
-
-    function faceEntry() {
-        clear();
-        $("#sub").hide();
-        $("#info").show();
-    }
-
-
-    function takePhotos() {
-        $("#photos").empty();
-        $.post('/takePhotos/', {}, function (res, status) {
-            if (res.status == 'success') {
-
-                $("#photos").append(
-                    "<img src=\"data:image/gif;base64," + res.image + "\" width=\"480px\" height=\"360px\">"
-                );
-
-
-                $("#sub").show()
-            }
-        });
-    }
-
-    function subRes() {
-        var name = $('#name').val();
+    function sub() {
+        let name = $('#name').val();
         if (name == '') {
             $("#tips").empty();
-            $("#tips").append('Name must be clarified')
+            $("#tips").append('Name must be clarified!');
         } else {
+            let data = {
+                'name': name,
+                'image': canvasEle.toDataURL('image/jpeg', 1)
+            };
+            $.post('/entry/', JSON.stringify(data), function (res, status) {
+                $("#tips").empty();
+                if (status == 'success') {
+                    $("#tips").append(res.msg);
+                    $("#name").val('');
+                    $('#entryInfo').hide();
 
 
-            $.post('/subInfo/', JSON.stringify({'name': name}), function (res, status) {
-                if (res.status == 'success') {
-
-                    $("#info").hide();
-                    clear();
-                    $("#tips").append('success')
+                }
+                else {
+                    $("#tips").append('Failed!')
                 }
 
             });
+
         }
+    }
+
+
+    function entry() {
+        $("#tips").empty();
+        $("#name").val('');
+        $('#entryInfo').show();
+        takePhoto();
 
 
     }
 
+    function reg() {
+        $("#tips").empty();
+        $('#entryInfo').hide();
+        takePhoto();
+        $.post('/reg/', JSON.stringify({'image': canvasEle.toDataURL('image/jpeg', 1)}), function (res, status) {
+
+            if (status == 'success') {
+                $("#tips").append(res.msg);
+            }
+            else {
+                $("#tips").append('Failed!')
+            }
+        })
+
+    }
+
+
+    function getMedia() {
+        let constraints = {
+            video: {width: 500, height: 500},
+            audio: false
+        };
+        let promise = navigator.mediaDevices.getUserMedia(constraints);
+        promise.then(function (MediaStream) {
+            videoEle.srcObject = MediaStream;
+            videoEle.play();
+        });
+    }
+
+    function takePhoto() {
+
+        let ctx = canvasEle.getContext('2d');
+        ctx.drawImage(videoEle, 0, 0, 500, 500);
+
+
+    }
+
+
+    getMedia();
 </script>
 </body>
 </html>

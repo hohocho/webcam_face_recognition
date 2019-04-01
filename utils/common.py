@@ -1,26 +1,23 @@
-import aiomysql
-import base64
-import numpy as np
 import cv2
+import base64
+import aiosqlite
+import face_recognition
+
+import numpy as np
 
 
-async def saveInfoToMysql(pool, name, faceInfo):
-    sql = "INSERT INTO `faceReg`.`faceInfo` (`name`, `face`) VALUES ('{}', '{}')".format(
-        name,
-        faceInfo
-    )
-    async with pool.acquire() as conn:
-        async with conn.cursor(aiomysql.DictCursor) as cur:
-            await cur.execute(sql)
-            await conn.commit()
+async def saveInfo(name, image):
+    sql = "INSERT INTO `main`.`face` (`name`, `faceInfo`) VALUES ('{}', '{}')".format(name, image)
+    async with aiosqlite.connect('./face.db') as db:
+        async with db.execute(sql):
+            await db.commit()
 
 
-async def getFaceInfo(pool):
-    sql = 'SELECT * FROM faceReg.faceInfo'
-    async with pool.acquire() as conn:
-        async with conn.cursor(aiomysql.DictCursor) as cur:
-            await cur.execute(sql)
-            res = await cur.fetchall()
+async def getFaceInfo():
+    sql = 'SELECT `name`, `faceInfo` FROM `main`.`face`'
+    async with aiosqlite.connect('./face.db') as db:
+        async with db.execute(sql) as cursor:
+            res = await cursor.fetchall()
     return res
 
 
@@ -39,3 +36,24 @@ def cvToBase64(img):
     '''
     img_str = cv2.imencode('.jpg', img)[1].tostring()
     return base64.b64encode(img_str).decode('utf-8')
+
+
+async def faceReg(npData):
+    try:
+        knownsEncode = []
+        knownsInfo = []
+        faceInfo = await getFaceInfo()
+
+        for i in faceInfo:
+            knownsInfo.append(i[0])
+            knownFacesEncode = face_recognition.face_encodings(base64ToNumpy(i[1]))[0]
+            knownsEncode.append(knownFacesEncode)
+
+        unKnownFacesEncode = face_recognition.face_encodings(npData)[0]
+        regRes = face_recognition.compare_faces(knownsEncode, unKnownFacesEncode)
+        res = knownsInfo[regRes.index(True)]
+
+    except:
+        return 'Unknown Person!'
+
+    return res

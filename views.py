@@ -1,10 +1,6 @@
-import json
-import time
-
 from sanic import Blueprint, response
 from jinja2 import Environment, PackageLoader, select_autoescape
-from utils.common import saveInfoToMysql, base64ToNumpy
-from utils.faceReg import faceReg
+from utils.common import saveInfo, faceReg, base64ToNumpy
 
 # jinja2 config
 
@@ -27,40 +23,30 @@ async def index(request):
     return await template('index.html')
 
 
-@bp.route("/takePhotos/", methods=['POST'])
-async def takePhotos(request):
-    app = request.app
-    image = app.webcam.getImage()
-    await app.redis_pool.zadd('imageInfo', int(time.time()), json.dumps(image))
-    await app.redis_pool.expire('imageInfo', 60 * 10)
-
-    return response.json({'status': 'success', 'image': image})
-
-
-@bp.route("/subInfo/", methods=['POST', ])
-async def subInfo(request):
+@bp.route("/entry/", methods=['POST', ])
+async def entry(request):
     try:
-        app = request.app
-        res = await app.redis_pool.zrevrangebyscore('imageInfo', float('inf'), float('-inf'))
         data = request.json
         name = data.get('name')
+        image = data.get('image').split(',')[-1]
 
-        faceInfo = res[0].decode('utf-8')
+        await saveInfo(name=name, image=image)
+        msg = 'success'
 
-        await saveInfoToMysql(pool=app.mysql_pool, name=name, faceInfo=faceInfo)
     except Exception as e:
-        print(e)
-        return response.json({'status': 'fail'})
-
-    return response.json({'status': 'success'})
+        msg = e.__str__()
+    return response.json({'msg': msg})
 
 
 @bp.route("/reg/", methods=['POST', ])
 async def reg(request):
-    app = request.app
+    try:
+        data = request.json
+        image = data.get('image').split(',')[-1]
+        npData = base64ToNumpy(image)
+    except Exception as e:
+        msg = e.__str__()
+    else:
+        msg = await faceReg(npData)
 
-    npData = base64ToNumpy(app.webcam.getImage())
-
-    res = await faceReg(pool=app.mysql_pool, npData=npData)
-
-    return response.json({'status': 'success', 'msg': res})
+    return response.json({'msg': msg})
