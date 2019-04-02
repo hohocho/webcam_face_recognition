@@ -24,7 +24,7 @@ The database uses the simplest sqlite.
 
 To install this project, simply use [pipenv](http://pipenv.org/) (or pip, of course):
 
-```shell
+```
 $ git clone https://github.com/hohocho/webcam_face_recognition.git
 $ cd webcam_face_recognition
 $ pipenv install
