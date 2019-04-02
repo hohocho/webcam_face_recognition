@@ -20,13 +20,17 @@ The database uses the simplest sqlite.
 
 * Python3.6+
 
+## Installation
 
-## Install
+To install this project, simply use [pipenv](http://pipenv.org/) (or pip, of course):
 
 ```shell
-pip install -r requirements.txt
+$ git clone https://github.com/hohocho/webcam_face_recognition.git
+$ cd webcam_face_recognition
+$ pipenv install
 ```
 
+Satisfaction guaranteed.
 
 ## Usage
 
