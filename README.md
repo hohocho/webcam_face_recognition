@@ -37,3 +37,4 @@ Satisfaction guaranteed.
 ```shell
 python run.py
 ```
+If you want to deploy the service remotely, you must use **https** ([Why?](https://goo.gl/rStTGz))
